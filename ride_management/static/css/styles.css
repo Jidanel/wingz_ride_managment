@@ -1,0 +1,23 @@
+body {
+  font-family: Arial, sans-serif;
+}
+
+footer {
+  background-color: #f8f9fa;
+  padding: 10px 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  table {
+      font-size: 12px;
+  }
+
+  .form-control {
+      width: 100%;
+      margin-bottom: 10px;
+  }
+}
+

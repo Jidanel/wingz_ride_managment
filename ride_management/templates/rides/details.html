@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Ride Details</h1>
+<p><strong>Rider:</strong> {{ ride.rider }}</p>
+<p><strong>Driver:</strong> {{ ride.driver }}</p>
+<p><strong>Status:</strong> {{ ride.status }}</p>
+<p><strong>Pickup Location:</strong> {{ ride.start_location }}</p>
+<p><strong>Dropoff Location:</strong> {{ ride.end_location }}</p>
+<a href="{% url 'ride-list' %}" class="btn btn-secondary">Back to List</a>
+{% endblock %}
