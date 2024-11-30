@@ -1,10 +1,32 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Ride Details</h1>
-<p><strong>Rider:</strong> {{ ride.rider }}</p>
-<p><strong>Driver:</strong> {{ ride.driver }}</p>
-<p><strong>Status:</strong> {{ ride.status }}</p>
-<p><strong>Pickup Location:</strong> {{ ride.start_location }}</p>
-<p><strong>Dropoff Location:</strong> {{ ride.end_location }}</p>
-<a href="{% url 'ride-list' %}" class="btn btn-secondary">Back to List</a>
+<div class="container mt-5">
+    <h1 class="text-center">Ride Details</h1>
+    <div class="card p-4 shadow-sm">
+        <p><strong>Rider:</strong> {{ ride.rider.username }}</p>
+        <p><strong>Driver:</strong> {{ ride.driver.username }}</p>
+        <p><strong>Status:</strong> {{ ride.status|title }}</p>
+        <p><strong>Pickup Location:</strong> 
+            Latitude: {{ ride.pickup_latitude }}, Longitude: {{ ride.pickup_longitude }}</p>
+        <p><strong>Dropoff Location:</strong> 
+            Latitude: {{ ride.dropoff_latitude }}, Longitude: {{ ride.dropoff_longitude }}</p>
+        <p><strong>Start Time:</strong> {{ ride.start_time|date:"d/m/Y H:i" }}</p>
+        <p><strong>End Time:</strong> 
+            {% if ride.end_time %} 
+                {{ ride.end_time|date:"d/m/Y H:i" }}
+            {% else %}
+                N/A
+            {% endif %}
+        </p>
+        <p><strong>Today's Events:</strong></p>
+        <ul>
+            {% for event in todays_ride_events %}
+                <li>{{ event.timestamp|date:"d/m/Y H:i" }} - {{ event.description }}</li>
+            {% empty %}
+                <li>No events in the last 24 hours.</li>
+            {% endfor %}
+        </ul>
+        <a href="{% url 'ride-list' %}" class="btn btn-secondary mt-3">Back to List</a>
+    </div>
+</div>
 {% endblock %}

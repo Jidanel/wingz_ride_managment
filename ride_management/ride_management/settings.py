@@ -101,7 +101,7 @@ AUTH_PASSWORD_VALIDATORS = []
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Lagos'
 
 USE_I18N = True
 
@@ -143,9 +143,17 @@ MESSAGE_TAGS = {
 AUTH_USER_MODEL = 'users.User'
 
 
-LOGIN_URL = "/users/accounts/login/"  # Assurez-vous que le chemin correspond
-LOGIN_REDIRECT_URL = "/api/rides/ui/rides/"  # Page après connexion
-LOGOUT_REDIRECT_URL = "/users/accounts/login/"  # Redirection après déconnexion
+# URL to redirect to after login
+LOGIN_REDIRECT_URL = '/'
+
+# URL to redirect to after logout
+LOGOUT_REDIRECT_URL = '/users/login/'
+
+# URL for the login page (utilisé par les décorateurs `@login_required`)
+LOGIN_URL = '/users/login/'
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 LOGGING = {
     'version': 1,

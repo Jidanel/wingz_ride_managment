@@ -14,6 +14,7 @@ from .forms import *
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.contrib import messages
 from datetime import timedelta
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 class RidePagination(PageNumberPagination):
@@ -31,7 +32,7 @@ class Distance(Func):
 from django.db import connection
 import math
 
-class RideViewSet(ModelViewSet):
+class RideViewSet(LoginRequiredMixin, ModelViewSet):
     queryset = Ride.objects.select_related('rider', 'driver').prefetch_related(
         Prefetch(
             'events',
@@ -98,7 +99,7 @@ class RideViewSet(ModelViewSet):
 
         return queryset
 
-class RideEventViewSet(ModelViewSet):
+class RideEventViewSet(LoginRequiredMixin, ModelViewSet):
     queryset = RideEvent.objects.all()
     serializer_class = RideEventSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
@@ -139,28 +140,72 @@ class TripDurationReportView(APIView):
 from django.urls import reverse_lazy
 from .models import Ride
 
-class RideListView(ListView):
+class RideListView(LoginRequiredMixin, ListView):
     model = Ride
     template_name = 'rides/list.html'
     context_object_name = 'rides'
     paginate_by = 10
+        
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_admin:  # Si l'utilisateur est admin, il peut voir tous les rides
-            return Ride.objects.all()
-        elif user.is_rider:  # Si l'utilisateur est un rider, il ne voit que ses rides
-            return Ride.objects.filter(rider=user)
-        else:  # Pour les autres utilisateurs, aucun ride n'est affiché
-            return Ride.objects.none()
 
-class RideDetailView(DetailView):
+        # Définir la base du queryset
+        if user.is_admin:  # Si l'utilisateur est admin, il peut voir tous les rides
+            queryset = Ride.objects.all()
+        elif user.is_rider:  # Si l'utilisateur est un rider, il ne voit que ses rides
+            queryset = Ride.objects.filter(rider=user)
+        else:  # Pour les autres utilisateurs, aucun ride n'est affiché
+            return Ride.objects.none()  # Retourne un queryset vide
+
+        # Filtrage basé sur l'email
+        email = self.request.GET.get('email')
+        if email:
+            queryset = queryset.filter(rider__email__icontains=email)
+            print(f"Filtrage par email : {email}, Résultats : {queryset.count()}") 
+
+        # Filtrage basé sur le statut
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+
+        # Tri basé sur les options
+        order_by = self.request.GET.get('order_by')
+        if order_by == 'pickup_time':
+            queryset = queryset.order_by('start_time')
+        elif order_by == 'distance':
+            lat = self.request.GET.get('latitude')
+            lng = self.request.GET.get('longitude')
+            if lat and lng:
+                lat = float(lat)
+                lng = float(lng)
+                queryset = queryset.annotate(
+                    distance=Distance(
+                        x1=F('pickup_longitude'),
+                        y1=F('pickup_latitude'),
+                        x2=Value(lng),
+                        y2=Value(lat),
+                        output_field=FloatField()
+                    )
+                ).order_by('distance')
+
+        return queryset
+
+
+
+
+class RideDetailView(LoginRequiredMixin, DetailView):
     model = Ride
     template_name = 'rides/details.html'
+    context_object_name = 'ride'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['todays_ride_events'] = self.object.events.filter(timestamp__gte=now() - timedelta(days=1))
+        return context
 
 
-
-class RideCreateView(CreateView):
+class RideCreateView(LoginRequiredMixin, CreateView):
     model = Ride
     form_class = RideCreateForm
     template_name = 'rides/create.html'
@@ -179,7 +224,7 @@ class RideCreateView(CreateView):
 
 
 
-class RideUpdateView(UpdateView):
+class RideUpdateView(LoginRequiredMixin, UpdateView):
     model = Ride
     form_class = RideUpdateForm
     template_name = 'rides/update.html'  # Nom du template pour la mise à jour

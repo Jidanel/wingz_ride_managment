@@ -20,14 +20,19 @@
                 </select>
             </div>
             <div class="col-md-4">
-                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <select name="order_by" class="form-control">
+                    <option value="">Sort By</option>
+                    <option value="pickup_time" {% if request.GET.order_by == 'pickup_time' %}selected{% endif %}>Pickup Time</option>
+                    <option value="distance" {% if request.GET.order_by == 'distance' %}selected{% endif %}>Distance</option>
+                </select>
             </div>
+            
         </div>
     </form>
     <table class="table table-bordered">
         <thead>
             <tr>
-                <th>ID</th>
+                <th>#</th>
                 <th>Rider</th>
                 <th>Driver</th>
                 <th>Status</th>
@@ -43,7 +48,7 @@
                 <tr class="{% if ride.status == 'scheduled' %}table-warning
                             {% elif ride.status == 'in_progress' %}table-success
                             {% elif ride.status == 'completed' %}table-primary{% endif %}">
-                    <td>{{ ride.id }}</td>
+                    <td>{{ forloop.counter }}</td>
                     <td>{{ ride.rider }}</td>
                     <td>{{ ride.driver }}</td>
                     <td>{{ ride.status }}</td>
@@ -65,7 +70,11 @@
                     </td>
                     <td>
                         <a href="{% url 'ride-detail' ride.id %}" class="btn btn-info btn-sm">View</a>
-                        <a href="{% url 'ride-update' pk=ride.id %}" class="btn btn-info btn-sm">Update</a>
+                        {% if ride.status != 'completed' %}
+                            <a href="{% url 'ride-update' pk=ride.id %}" class="btn btn-info btn-sm">Update</a>
+                        {% else %}
+                            <button class="btn btn-secondary btn-sm" disabled>Completed</button>
+                        {% endif %}
                     </td>
                 </tr>
             {% endfor %}
@@ -76,12 +85,51 @@
 <nav>
     <ul class="pagination">
         {% if rides.has_previous %}
-            <li class="page-item"><a class="page-link" href="?page={{ rides.previous_page_number }}">Previous</a></li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ rides.previous_page_number }}&status={{ request.GET.status }}&email={{ request.GET.email }}&order_by={{ request.GET.order_by }}">Previous</a>
+            </li>
         {% endif %}
-        <li class="page-item active"><span class="page-link">{{ rides.number }}</span></li>
+        <li class="page-item active">
+            <span class="page-link">Page  {{ rides.number }} / {{ rides.paginator.num_pages }}</span>
+        </li>
         {% if rides.has_next %}
-            <li class="page-item"><a class="page-link" href="?page={{ rides.next_page_number }}">Next</a></li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ rides.next_page_number }}&status={{ request.GET.status }}&email={{ request.GET.email }}&order_by={{ request.GET.order_by }}">Next</a>
+            </li>
         {% endif %}
     </ul>
 </nav>
+<script>
+    function applyFilters() {
+        // Obtenez les valeurs des champs de filtre
+        const email = document.querySelector('input[name="email"]').value;
+        const status = document.querySelector('select[name="status"]').value;
+        const orderBy = document.querySelector('select[name="order_by"]').value;
+
+        // Construisez une nouvelle URL avec les paramètres de filtre
+        let queryParams = [];
+        if (email) queryParams.push(`email=${encodeURIComponent(email)}`);
+        if (status) queryParams.push(`status=${encodeURIComponent(status)}`);
+        if (orderBy) queryParams.push(`order_by=${encodeURIComponent(orderBy)}`);
+
+        // Ajoutez les paramètres à l'URL
+        const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+        const newUrl = `${window.location.pathname}${queryString}`;
+
+        // Redirigez vers la nouvelle URL
+        window.location.href = newUrl;
+    }
+
+    // Ajoutez des écouteurs pour détecter les modifications des filtres
+    document.addEventListener('DOMContentLoaded', () => {
+        const emailInput = document.querySelector('input[name="email"]');
+        const statusSelect = document.querySelector('select[name="status"]');
+        const orderBySelect = document.querySelector('select[name="order_by"]');
+
+        emailInput.addEventListener('input', applyFilters); // Appliquez le filtre sur modification
+        statusSelect.addEventListener('change', applyFilters); // Appliquez le filtre sur changement
+        orderBySelect.addEventListener('change', applyFilters); // Appliquez le filtre sur changement
+    });
+</script>
+
 {% endblock %}

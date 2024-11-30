@@ -1,8 +1,19 @@
+from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm
-from django.urls import reverse_lazy
-from django.views.generic import CreateView
+from django.contrib import messages
+from .forms import CustomUserCreationForm
 
-class RegisterView(CreateView):
-    form_class = UserCreationForm
-    template_name = "registration/register.html"
-    success_url = reverse_lazy("login")
+def register(request):
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Account created successfully! You can now login.')
+            return redirect('login')
+    else:
+        form = CustomUserCreationForm()
+        # Si l'utilisateur est authentifié, préremplir l'email
+        if request.user.is_authenticated:
+            form.fields['email'].initial = request.user.email
+    return render(request, 'users/register.html', {'form': form})
+
